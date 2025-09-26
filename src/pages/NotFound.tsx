@@ -1,24 +1,20 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import React from "react";
+import { Link } from "react-router-dom";
+import { GradientBG } from "@/components/shared/GradientBG";
+import { Navbar } from "@/components/shared/Navbar";
+import { Button } from "@/components/ui/button";
 
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-gray-600">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 underline hover:text-blue-700">
-          Return to Home
-        </a>
-      </div>
+const NotFound: React.FC = () => (
+  <GradientBG>
+    <Navbar />
+    <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+      <h2 className="text-4xl font-extrabold">Page not found</h2>
+      <p className="mt-2 text-slate-600">The page you're looking for doesn't exist.</p>
+      <Link to="/">
+        <Button className="mt-6 rounded-xl bg-gradient-hero text-slate-800 hover:scale-105 transition-transform">Go Home</Button>
+      </Link>
     </div>
-  );
-};
+  </GradientBG>
+);
 
 export default NotFound;
