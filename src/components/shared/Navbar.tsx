@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, px } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { LogIn, Users, GraduationCap, School } from "lucide-react";
 
@@ -41,10 +41,8 @@ export const Navbar: React.FC = () => {
           {/* Center Logo */}
           <Link to="/" className="mx-auto">
             <motion.div whileHover={{ scale: 1.06 }} className="flex items-center gap-2 select-none">
-              <div className="h-10 w-10 rounded-2xl shadow-md bg-gradient-primary" />
-              <span className="font-extrabold tracking-tight text-xl">
-                Champ <span className="text-slate-500">Code</span> Academy
-              </span>
+              <img className="logo" width="80" height="80" src="https://i.ibb.co/tpySpVLh/Logo.png" />
+              
             </motion.div>
           </Link>
           

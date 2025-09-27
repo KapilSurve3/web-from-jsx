@@ -18,12 +18,20 @@ const CTA: React.FC<{ to: string; label: string; icon?: React.ReactNode }> = ({ 
 
 const HeroGallery: React.FC = () => (
   <div className="grid gap-4">
-    <motion.div whileHover={{ scale: 1.02 }} className="rounded-3xl overflow-hidden shadow-card border border-glass-border bg-glass-bg backdrop-blur-sm">
-      <img
-        alt="Kids coding"
-        src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=1400&auto=format&fit=crop"
-        className="h-72 w-full object-cover"
-      />
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="rounded-3xl overflow-hidden shadow-card border border-glass-border bg-glass-bg backdrop-blur-sm"
+    >
+      <iframe
+        width="100%"
+        height="288" // h-72 = 18rem = 288px
+        src="https://www.youtube.com/embed/B0IAUWyOatQ"
+        title="Kids coding"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full"
+      ></iframe>
     </motion.div>
     <div className="grid grid-cols-2 gap-4">
       <motion.div whileHover={{ scale: 1.02 }} className="rounded-3xl overflow-hidden shadow-card border border-glass-border bg-glass-bg backdrop-blur-sm">
@@ -58,7 +66,7 @@ export const HeroSection: React.FC = () => {
             Coding for Kids
             <br />
             <span className="bg-clip-text text-transparent bg-gradient-hero">
-              Ages 9–15
+              Age 7 & above
             </span>
           </motion.h1>
           <p className="mt-5 text-lg text-slate-600">

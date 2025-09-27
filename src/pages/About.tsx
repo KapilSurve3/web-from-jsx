@@ -15,7 +15,7 @@ const About: React.FC = () => (
             <CardTitle>Our Mission</CardTitle>
           </CardHeader>
           <CardContent className="text-slate-700">
-            To teach kids tech skills in a fun and engaging way so they can thrive in a digital world.
+            To teach children tech skills through fun and engaging lessons, empowering them to thrive in a digital world.
           </CardContent>
         </Card>
         <Card className="rounded-2xl bg-glass-bg backdrop-blur-sm border-glass-border shadow-card">
@@ -23,7 +23,7 @@ const About: React.FC = () => (
             <CardTitle>Our Vision</CardTitle>
           </CardHeader>
           <CardContent className="text-slate-700">
-            To provide quality education that empowers students and equips them with future‑ready skills by cultivating curiosity and creativity.
+            To provide high-quality education that equips students with future-ready skills, fostering curiosity, creativity, and a lifelong love of learning.
           </CardContent>
         </Card>
       </div>
