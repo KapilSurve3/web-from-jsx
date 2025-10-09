@@ -43,6 +43,66 @@ const PaymentPortal: React.FC = () => {
     fetchData();
   }, []);
 
+  async function fetchData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) return;
+
+      // Fetch subscription plans
+      const { data: plansData, error: plansError } = await supabase
+        .from('subscription_plans')
+        .select('*');
+
+      if (plansError) throw plansError;
+
+      // Fetch payment history
+      const { data: historyData, error: historyError } = await supabase
+        .from('payment_history')
+        .select(`
+          *,
+          children (full_name),
+          subscription_plans (name)
+        `)
+        .eq('parent_email', profile.email)
+        .order('payment_date', { ascending: false });
+
+      if (historyError) throw historyError;
+
+      // Fetch credit balance
+      const { data: creditsData, error: creditsError } = await supabase
+        .from('parent_credits')
+        .select('credits_balance, credits_used')
+        .eq('parent_email', profile.email)
+        .maybeSingle();
+
+      if (creditsError) throw creditsError;
+
+      setPlans(plansData || []);
+      setPaymentHistory(historyData || []);
+      setCredits({ 
+        balance: creditsData?.credits_balance || 0, 
+        used: creditsData?.credits_used || 0 
+      });
+    } catch (error) {
+      console.error('Error fetching payment data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load payment data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSubscribe(plan: SubscriptionPlan) {
     setPurchasing(true);
     try {
@@ -116,7 +176,6 @@ const PaymentPortal: React.FC = () => {
   }
 
   function downloadReceipt(payment: PaymentRecord) {
-    // Generate simple text receipt
     const receiptContent = `
 RECEIPT
 -------
@@ -125,79 +184,20 @@ Amount: $${(payment.amount_cents / 100).toFixed(2)}
 Credits: ${payment.credits_purchased}
 Plan: ${payment.subscription_plans?.name || 'N/A'}
 Status: ${payment.status.toUpperCase()}
+Payment ID: ${payment.id}
 -------
 Thank you for your purchase!
-    `;
+    `.trim();
 
     const blob = new Blob([receiptContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `receipt-${payment.id}.txt`;
+    a.download = `receipt-${payment.id.slice(0, 8)}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  async function fetchData() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile) return;
-
-      // Fetch subscription plans
-      const { data: plansData, error: plansError } = await supabase
-        .from('subscription_plans')
-        .select('*');
-
-      if (plansError) throw plansError;
-
-      // Fetch payment history
-      const { data: historyData, error: historyError } = await supabase
-        .from('payment_history')
-        .select(`
-          *,
-          children (full_name),
-          subscription_plans (name)
-        `)
-        .eq('parent_email', profile.email)
-        .order('payment_date', { ascending: false });
-
-      if (historyError) throw historyError;
-
-      // Fetch credit balance
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('parent_credits')
-        .select('credits_balance, credits_used')
-        .eq('parent_email', profile.email)
-        .maybeSingle();
-
-      if (creditsError) throw creditsError;
-
-      setPlans(plansData || []);
-      setPaymentHistory(historyData || []);
-      setCredits({ 
-        balance: creditsData?.credits_balance || 0, 
-        used: creditsData?.credits_used || 0 
-      });
-    } catch (error) {
-      console.error('Error fetching payment data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load payment data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   }
 
   if (loading) {
