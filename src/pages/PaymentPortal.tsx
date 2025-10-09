@@ -36,11 +36,109 @@ const PaymentPortal: React.FC = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
   const [credits, setCredits] = useState({ balance: 0, used: 0 });
   const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  async function handleSubscribe(plan: SubscriptionPlan) {
+    setPurchasing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Create payment record
+      const { error: paymentError } = await supabase
+        .from('payment_history')
+        .insert({
+          parent_email: profile.email,
+          credits_purchased: plan.credits_per_period,
+          amount_cents: plan.price_cents,
+          plan_id: plan.id,
+          status: 'paid',
+        });
+
+      if (paymentError) throw paymentError;
+
+      // Update parent credits
+      const { data: existingCredits } = await supabase
+        .from('parent_credits')
+        .select('credits_balance')
+        .eq('parent_email', profile.email)
+        .maybeSingle();
+
+      if (existingCredits) {
+        const { error: updateError } = await supabase
+          .from('parent_credits')
+          .update({
+            credits_balance: existingCredits.credits_balance + plan.credits_per_period,
+          })
+          .eq('parent_email', profile.email);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('parent_credits')
+          .insert({
+            parent_email: profile.email,
+            credits_balance: plan.credits_per_period,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Success!",
+        description: `You have purchased ${plan.credits_per_period} credits for $${(plan.price_cents / 100).toFixed(2)}`,
+      });
+
+      await fetchData();
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process subscription",
+        variant: "destructive",
+      });
+    } finally {
+      setPurchasing(false);
+    }
+  }
+
+  function downloadReceipt(payment: PaymentRecord) {
+    // Generate simple text receipt
+    const receiptContent = `
+RECEIPT
+-------
+Date: ${new Date(payment.payment_date).toLocaleString()}
+Amount: $${(payment.amount_cents / 100).toFixed(2)}
+Credits: ${payment.credits_purchased}
+Plan: ${payment.subscription_plans?.name || 'N/A'}
+Status: ${payment.status.toUpperCase()}
+-------
+Thank you for your purchase!
+    `;
+
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${payment.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   async function fetchData() {
     try {
@@ -161,7 +259,13 @@ const PaymentPortal: React.FC = () => {
                         )}
                       </CardContent>
                       <CardFooter>
-                        <Button className="w-full rounded-xl bg-gradient-hero text-slate-800 hover:scale-105 transition-transform">Subscribe</Button>
+                        <Button 
+                          className="w-full rounded-xl bg-gradient-hero text-slate-800 hover:scale-105 transition-transform"
+                          onClick={() => handleSubscribe(p)}
+                          disabled={purchasing}
+                        >
+                          {purchasing ? 'Processing...' : 'Subscribe'}
+                        </Button>
                       </CardFooter>
                     </Card>
                   </motion.div>
@@ -209,15 +313,14 @@ const PaymentPortal: React.FC = () => {
                           </Badge>
                         </td>
                         <td className="py-2 pr-4">
-                          {h.invoice_url ? (
-                            <Button size="sm" variant="ghost" className="rounded-lg" asChild>
-                              <a href={h.invoice_url} download target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="rounded-lg"
+                            onClick={() => downloadReceipt(h)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))
